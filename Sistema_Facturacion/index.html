@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Facturación AFIP/ARCA</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .header-icon {
+            background: #667eea;
+            color: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+
+        .header-content h1 {
+            color: #333;
+            font-size: 32px;
+            margin-bottom: 5px;
+        }
+
+        .header-content p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .status-online {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-offline {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+        }
+
+        .alert.show {
+            display: flex;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .tabs {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .tab-buttons {
+            display: flex;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 20px;
+            background: white;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #666;
+        }
+
+        .tab-btn.active {
+            background: #667eea;
+            color: white;
+            border-bottom: 3px solid #5568d3;
+        }
+
+        .tab-btn:hover:not(.active) {
+            background: #f5f5f5;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: border 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .tipo-factura {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .tipo-btn {
+            padding: 20px;
+            border: 3px solid #e0e0e0;
+            border-radius: 12px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .tipo-btn:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .tipo-btn.active {
+            border-color: #667eea;
+            background: #f0f3ff;
+        }
+
+        .tipo-btn h3 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .tipo-btn p {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .items-section {
+            margin: 30px 0;
+        }
+
+        .items-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .items-header h3 {
+            color: #333;
+            font-size: 20px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            background: #218838;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+            padding: 8px 12px;
+            font-size: 18px;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .item-row {
+            display: grid;
+            grid-template-columns: 2fr 100px 120px 120px 50px;
+            gap: 10px;
+            margin-bottom: 10px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            align-items: center;
+        }
+
+        .item-row input {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .item-total {
+            font-weight: 700;
+            color: #333;
+            text-align: right;
+        }
+
+        .totales {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 25px;
+            border-radius: 12px;
+            margin: 30px 0;
+            color: white;
+        }
+
+        .totales-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+
+        .totales-row.total {
+            font-size: 28px;
+            font-weight: 700;
+            padding-top: 15px;
+            border-top: 2px solid rgba(255,255,255,0.3);
+            margin-top: 15px;
+        }
+
+        .btn-emitir {
+            width: 100%;
+            padding: 20px;
+            font-size: 18px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-emitir:hover:not(:disabled) {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(40, 167, 69, 0.3);
+        }
+
+        .btn-emitir:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .factura-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+
+        .factura-card:hover {
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        .factura-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .factura-tipo {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+
+        .factura-tipo.tipo-a {
+            background: #e3d5ff;
+            color: #6f42c1;
+        }
+
+        .factura-tipo.tipo-b {
+            background: #d4edda;
+            color: #28a745;
+        }
+
+        .factura-numero {
+            font-size: 20px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .factura-total {
+            font-size: 28px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .factura-cae {
+            font-size: 11px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .factura-detalles {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+
+            .tipo-factura {
+                grid-template-columns: 1fr;
+            }
+
+            .item-row {
+                grid-template-columns: 1fr;
+            }
+
+            .factura-detalles {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-icon">📄</div>
+            <div class="header-content">
+                <h1>Sistema de Facturación ARCA</h1>
+                <p>
+                    Simulador de Facturación Electrónica
+                    <span id="statusBadge" class="status-badge status-offline">Desconectado</span>
+                </p>
+            </div>
+        </div>
+
+        <div id="alertSuccess" class="alert alert-success">
+            <span>✓</span>
+            <span id="alertSuccessText"></span>
+        </div>
+        <div id="alertError" class="alert alert-error">
+            <span>✕</span>
+            <span id="alertErrorText"></span>
+        </div>
+
+        <div class="tabs">
+            <div class="tab-buttons">
+                <button class="tab-btn active" data-tab="nueva">Nueva Factura</button>
+                <button class="tab-btn" data-tab="listado">Listado de Facturas (<span id="totalFacturas">0</span>)</button>
+            </div>
+
+            <div id="tabNueva" class="tab-content active">
+                <div class="form-group">
+                    <label>Tipo de Factura</label>
+                    <div class="tipo-factura">
+                        <div class="tipo-btn active" data-tipo="B">
+                            <h3>Factura B</h3>
+                            <p>IVA incluido</p>
+                        </div>
+                        <div class="tipo-btn" data-tipo="A">
+                            <h3>Factura A</h3>
+                            <p>IVA discriminado</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Punto de Venta</label>
+                    <select id="puntoVenta">
+                        <option value="1">Punto de Venta 1</option>
+                        <option value="2">Punto de Venta 2</option>
+                        <option value="3">Punto de Venta 3</option>
+                        <option value="4">Punto de Venta 4</option>
+                        <option value="5">Punto de Venta 5</option>
+                    </select>
+                </div>
+
+                <h3 style="margin: 30px 0 15px; color: #333;">Datos del Cliente</h3>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Razón Social *</label>
+                        <input type="text" id="razonSocial" placeholder="Nombre del cliente">
+                    </div>
+                    <div class="form-group">
+                        <label>CUIT</label>
+                        <input type="text" id="cuit" placeholder="20-12345678-9">
+                    </div>
+                    <div class="form-group">
+                        <label>Domicilio</label>
+                        <input type="text" id="domicilio" placeholder="Dirección">
+                    </div>
+                    <div class="form-group">
+                        <label>Condición IVA</label>
+                        <select id="condicionIVA">
+                            <option>Consumidor Final</option>
+                            <option>Responsable Inscripto</option>
+                            <option>Monotributista</option>
+                            <option>Exento</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="items-section">
+                    <div class="items-header">
+                        <h3>Items</h3>
+                        <button class="btn btn-success" id="btnAgregarItem">+ Agregar Item</button>
+                    </div>
+                    <div id="itemsContainer"></div>
+                </div>
+
+                <div class="totales">
+                    <div class="totales-row">
+                        <span>Subtotal:</span>
+                        <span id="subtotalDisplay">$0.00</span>
+                    </div>
+                    <div class="totales-row">
+                        <span>IVA (21%):</span>
+                        <span id="ivaDisplay">$0.00</span>
+                    </div>
+                    <div class="totales-row total">
+                        <span>TOTAL:</span>
+                        <span id="totalDisplay">$0.00</span>
+                    </div>
+                </div>
+
+                <button class="btn-emitir" id="btnEmitir">💰 Emitir Factura</button>
+            </div>
+
+            <div id="tabListado" class="tab-content">
+                <h3 style="margin-bottom: 20px; color: #333;">Facturas Emitidas</h3>
+                <div id="facturasContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000/api';
+        let tipoFactura = 'B';
+        let items = [];
+        let serverOnline = false;
+
+        // Inicializar
+        window.addEventListener('DOMContentLoaded', function() {
+            verificarServidor();
+            agregarItem();
+            inicializarEventos();
+        });
+
+        function inicializarEventos() {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const tab = this.getAttribute('data-tab');
+                    cambiarTab(tab, this);
+                });
+            });
+
+            document.querySelectorAll('.tipo-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const tipo = this.getAttribute('data-tipo');
+                    seleccionarTipo(tipo, this);
+                });
+            });
+
+            document.getElementById('btnAgregarItem').addEventListener('click', agregarItem);
+            document.getElementById('btnEmitir').addEventListener('click', emitirFactura);
+        }
+
+        async function verificarServidor() {
+            try {
+                const response = await fetch(`${API_URL}/puntos-venta`);
+                if (response.ok) {
+                    serverOnline = true;
+                    document.getElementById('statusBadge').textContent = 'Conectado';
+                    document.getElementById('statusBadge').className = 'status-badge status-online';
+                    cargarFacturas();
+                } else {
+                    throw new Error('Servidor no responde');
+                }
+            } catch (error) {
+                serverOnline = false;
+                document.getElementById('statusBadge').textContent = 'Desconectado';
+                document.getElementById('statusBadge').className = 'status-badge status-offline';
+                mostrarAlerta('error', 'No se puede conectar al servidor. Verifica que Flask esté corriendo en http://localhost:5000');
+            }
+        }
+
+        function cambiarTab(tab, btnElement) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active');
+
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            if (tab === 'nueva') {
+                document.getElementById('tabNueva').classList.add('active');
+            } else {
+                document.getElementById('tabListado').classList.add('active');
+                cargarFacturas();
+            }
+        }
+
+        function seleccionarTipo(tipo, btnElement) {
+            tipoFactura = tipo;
+            document.querySelectorAll('.tipo-btn').forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active');
+            calcularTotales();
+        }
+
+        function agregarItem() {
+            const id = Date.now();
+            items.push({ id, descripcion: '', cantidad: 1, precioUnitario: 0 });
+            renderizarItems();
+        }
+
+        function eliminarItem(id) {
+            items = items.filter(item => item.id !== id);
+            renderizarItems();
+            calcularTotales();
+        }
+
+        function actualizarItem(id, campo, valor) {
+            const item = items.find(i => i.id === id);
+            if (item) {
+                if (campo === 'descripcion') {
+                    item[campo] = valor;
+                } else {
+                    item[campo] = parseFloat(valor) || 0;
+                }
+                calcularTotales();
+            }
+        }
+
+        function renderizarItems() {
+            const container = document.getElementById('itemsContainer');
+            container.innerHTML = '';
+            
+            items.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'item-row';
+                
+                const inputDesc = document.createElement('input');
+                inputDesc.type = 'text';
+                inputDesc.placeholder = 'Descripción del producto/servicio';
+                inputDesc.value = item.descripcion;
+                inputDesc.addEventListener('input', (e) => actualizarItem(item.id, 'descripcion', e.target.value));
+                
+                const inputCant = document.createElement('input');
+                inputCant.type = 'number';
+                inputCant.placeholder = 'Cant.';
+                inputCant.min = '1';
+                inputCant.value = item.cantidad;
+                inputCant.addEventListener('input', (e) => actualizarItem(item.id, 'cantidad', e.target.value));
+                
+                const inputPrecio = document.createElement('input');
+                inputPrecio.type = 'number';
+                inputPrecio.placeholder = 'Precio';
+                inputPrecio.min = '0';
+                inputPrecio.step = '0.01';
+                inputPrecio.value = item.precioUnitario;
+                inputPrecio.addEventListener('input', (e) => actualizarItem(item.id, 'precioUnitario', e.target.value));
+                
+                const divTotal = document.createElement('div');
+                divTotal.className = 'item-total';
+                divTotal.textContent = formatoPesos(item.cantidad * item.precioUnitario);
+                
+                div.appendChild(inputDesc);
+                div.appendChild(inputCant);
+                div.appendChild(inputPrecio);
+                div.appendChild(divTotal);
+                
+                if (items.length > 1) {
+                    const btnEliminar = document.createElement('button');
+                    btnEliminar.className = 'btn-danger';
+                    btnEliminar.textContent = '🗑';
+                    btnEliminar.addEventListener('click', () => eliminarItem(item.id));
+                    div.appendChild(btnEliminar);
+                } else {
+                    div.appendChild(document.createElement('div'));
+                }
+                
+                container.appendChild(div);
+            });
+            
+            calcularTotales();
+        }
+
+        function calcularTotales() {
+            const subtotalItems = items.reduce((sum, item) => sum + (item.cantidad * item.precioUnitario), 0);
+            
+            let subtotal, iva, total;
+            
+            if (tipoFactura === 'A') {
+                subtotal = subtotalItems;
+                iva = subtotal * 0.21;
+                total = subtotal + iva;
+            } else {
+                total = subtotalItems;
+                subtotal = total / 1.21;
+                iva = total - subtotal;
+            }
+
+            document.getElementById('subtotalDisplay').textContent = formatoPesos(subtotal);
+            document.getElementById('ivaDisplay').textContent = formatoPesos(iva);
+            document.getElementById('totalDisplay').textContent = formatoPesos(total);
+
+            return { subtotal, iva, total };
+        }
+
+        function formatoPesos(valor) {
+            return new Intl.NumberFormat('es-AR', {
+                style: 'currency',
+                currency: 'ARS'
+            }).format(valor);
+        }
+
+        function mostrarAlerta(tipo, mensaje) {
+            const alertSuccess = document.getElementById('alertSuccess');
+            const alertError = document.getElementById('alertError');
+            
+            alertSuccess.classList.remove('show');
+            alertError.classList.remove('show');
+
+            if (tipo === 'exito') {
+                document.getElementById('alertSuccessText').textContent = mensaje;
+                alertSuccess.classList.add('show');
+            } else {
+                document.getElementById('alertErrorText').textContent = mensaje;
+                alertError.classList.add('show');
+            }
+
+            setTimeout(() => {
+                alertSuccess.classList.remove('show');
+                alertError.classList.remove('show');
+            }, 5000);
+        }
+
+        async function emitirFactura() {
+            if (!serverOnline) {
+                mostrarAlerta('error', 'No hay conexión con el servidor');
+                return;
+            }
+
+            const razonSocial = document.getElementById('razonSocial').value.trim();
+            
+            if (!razonSocial) {
+                mostrarAlerta('error', 'Debe ingresar la razón social del cliente');
+                return;
+            }
+
+            if (items.some(i => !i.descripcion || i.precioUnitario <= 0)) {
+                mostrarAlerta('error', 'Todos los items deben tener descripción y precio válido');
+                return;
+            }
+
+            const btnEmitir = document.getElementById('btnEmitir');
+            btnEmitir.disabled = true;
+            btnEmitir.textContent = '⏳ Emitiendo...';
+
+            try {
+                const datosFactura = {
+                    tipo: tipoFactura,
+                    puntoVenta: parseInt(document.getElementById('puntoVenta').value),
+                    cliente: {
+                        razonSocial: razonSocial,
+                        cuit: document.getElementById('cuit').value,
+                        domicilio: document.getElementById('domicilio').value,
+                        condicionIVA: document.getElementById('condicionIVA').value
+                    },
+                    items: items.map(item => ({
+                        descripcion: item.descripcion,
+                        cantidad: item.cantidad,
+                        precioUnitario: item.precioUnitario
+                    }))
+                };
+
+                const response = await fetch(`${API_URL}/facturas`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(datosFactura)
+                });
+
+                const resultado = await response.json();
+
+                if (response.ok) {
+                    mostrarAlerta('exito', `Factura ${resultado.factura.numero} autorizada correctamente. CAE: ${resultado.factura.cae}`);
+                    
+                    // Reset formulario
+                    document.getElementById('razonSocial').value = '';
+                    document.getElementById('cuit').value = '';
+                    document.getElementById('domicilio').value = '';
+                    items = [];
+                    agregarItem();
+                    
+                    cargarFacturas();
+                } else {
+                    mostrarAlerta('error', resultado.error || 'Error al emitir la factura');
+                }
+            } catch (error) {
+                mostrarAlerta('error', 'Error de conexión: ' + error.message);
+            } finally {
+                btnEmitir.disabled = false;
+                btnEmitir.textContent = '💰 Emitir Factura';
+            }
+        }
+
+        async function cargarFacturas() {
+            const container = document.getElementById('facturasContainer');
+            
+            container.innerHTML = '<div class="loading"><div class="spinner"></div><p>Cargando facturas...</p></div>';
+
+            try {
+                const response = await fetch(`${API_URL}/facturas`);
+                const data = await response.json();
+
+                document.getElementById('totalFacturas').textContent = data.total;
+
+                if (data.total === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div style="font-size: 60px; margin-bottom: 20px;">📄</div>
+                            <p style="font-size: 18px;">No hay facturas emitidas aún</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = data.facturas.map(factura => `
+                    <div class="factura-card">
+                        <div class="factura-header">
+                            <div>
+                                <span class="factura-tipo tipo-${factura.tipo.toLowerCase()}">Factura ${factura.tipo}</span>
+                                <span class="factura-numero">${factura.numero}</span>
+                                <p style="color: #666; margin-top: 8px;">${factura.cliente.razonSocial}</p>
+                                <p style="color: #999; font-size: 13px; margin-top: 4px;">
+                                    ${new Date(factura.fechaEmision).toLocaleDateString('es-AR', {
+                                        day: '2-digit',
+                                        month: '2-digit',
+                                        year: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                    })}
+                                </p>
+                            </div>
+                            <div style="text-align: right;">
+                                <div class="factura-total">${formatoPesos(factura.total)}</div>
+                                <div class="factura-cae">CAE: ${factura.cae}</div>
+                                <div style="font-size: 11px; color: #28a745; margin-top: 5px;">✓ ${factura.estado}</div>
+                            </div>
+                        </div>
+                        <div class="factura-detalles">
+                            <div><strong>Subtotal:</strong> ${formatoPesos(factura.subtotal)}</div>
+                            <div><strong>IVA:</strong> ${formatoPesos(factura.iva)}</div>
+                            <div><strong>Items:</strong> ${factura.items.length}</div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div style="font-size: 60px; margin-bottom: 20px;">⚠️</div>
+                        <p style="font-size: 18px; color: #dc3545;">Error al cargar las facturas</p>
+                        <p style="font-size: 14px; color: #999; margin-top: 10px;">${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
