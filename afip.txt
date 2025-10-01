@@ -1,0 +1,92 @@
+ function renderizarItems() {
+            const container = document.getElementById('itemsContainer');
+            container.innerHTML = '';
+            
+            items.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'item-row';
+                
+                const inputDesc = document.createElement('input');
+                inputDesc.type = 'text';
+                inputDesc.placeholder = 'Descripción del producto/servicio';
+                inputDesc.value = item.descripcion;
+                
+                
+                const inputCant = document.createElement('input');
+                inputCant.type = 'text';
+                inputCant.placeholder = 'Cant.';
+                inputCant.min = '1';
+                inputCant.value = item.cantidad;
+                
+                const inputPrecio = document.createElement('input');
+                inputPrecio.type = 'text';
+                inputPrecio.placeholder = 'Precio';
+                inputPrecio.min = '0';
+                inputPrecio.step = '0.01';
+                inputPrecio.value = item.precioUnitario;
+                
+                const divTotal = document.createElement('div');
+                divTotal.className = 'item-total';
+                divTotal.textContent = formatoPesos(item.cantidad * item.precioUnitario);
+                
+                div.appendChild(inputDesc);
+                div.appendChild(inputCant);
+                div.appendChild(inputPrecio);
+                div.appendChild(divTotal);
+
+                // Manejo de Enter para moverse entre campos
+                inputDesc.addEventListener('keydown', (e) => {
+                    if (e.key == 'Enter') {
+                        e.preventDefault();
+                        actualizarItem(item.id, 'descripcion', e.target.value);
+                        inputCant.focus();
+                    }
+                })
+
+                inputDesc.addEventListener('keydown', (e) => {
+                    if (e.key == 'Enter') {
+                        e.preventDefault();
+                        actualizarItem(item.id, 'cantidad', e.target.value);
+                        inputCant.focus();
+                    }
+                })
+
+                inputDesc.addEventListener('keydown', (e) => {
+                    if (e.key == 'Enter') {
+                        e.preventDefault();
+                        actualizarItem(item.id, 'precioUnitario', e.target.value);
+                        inputCant.focus();
+                    }
+                })
+                
+                if (items.length > 1) {
+                    const btnEliminar = document.createElement('button');
+                    btnEliminar.className = 'btn-danger';
+                    btnEliminar.textContent = '🗑';
+                    btnEliminar.addEventListener('click', () => eliminarItem(item.id));
+                    div.appendChild(btnEliminar);
+                } else {
+                    div.appendChild(document.createElement('div'));
+                }
+                
+                container.appendChild(div);
+            });
+            
+            calcularTotales();
+        }
+
+        function calcularTotales() {
+            const subtotalItems = items.reduce((sum, item) => sum + (item.cantidad * item.precioUnitario), 0);
+            
+            let subtotal, iva, total;
+            
+            if (tipoFactura === 'A') {
+                subtotal = subtotalItems;
+                iva = subtotal * 0.21;
+                total = subtotal + iva;
+            } else {
+                subtotal = total = subtotalItems + (subtotalItems * 0.21);
+                //subtotal = total / 1.21;
+                //iva = total - subtotal;
+                iva = 0.0;
+            }
