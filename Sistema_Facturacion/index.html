@@ -702,6 +702,7 @@
                 div.appendChild(inputPrecio);
                 div.appendChild(divTotal);
                 
+                
                 if (items.length > 1) {
                     const btnEliminar = document.createElement('button');
                     btnEliminar.className = 'btn-danger';
@@ -721,16 +722,19 @@
         function calcularTotales() {
             const subtotalItems = items.reduce((sum, item) => sum + (item.cantidad * item.precioUnitario), 0);
             
-            let subtotal, iva, total;
+            let subtotal, iva, total,precioUnitario;
             
             if (tipoFactura === 'A') {
+                precioUnitario = subtotalItems;
                 subtotal = subtotalItems;
-                iva = subtotal * 0.21;
-                total = subtotal + iva;
+                iva = subtotalItems * 0.21;
+                total = subtotalItems + iva;
             } else {
-                total = subtotalItems;
-                subtotal = total / 1.21;
-                iva = total - subtotal;
+                precioUnitario = subtotalItems +(subtotalItems * 0.21);
+                
+                iva = 0;
+                subtotal =  precioUnitario;
+                total = subtotal;
             }
 
             document.getElementById('subtotalDisplay').textContent = formatoPesos(subtotal);

@@ -4,6 +4,7 @@ from flask_cors import CORS
 from datetime import datetime, timedelta
 import random
 import json
+import io
 
 app = Flask(__name__)
 CORS(app)
@@ -24,13 +25,15 @@ def generar_numero_factura(tipo, punto_venta):
     contadores[tipo] += 1
     return f"{str(punto_venta).zfill(5)}-{str(numero).zfill(8)}"
 
+
 def calcular_totales(items, tipo):
+    importe_iva = 0.21
     """Calcular subtotal, IVA y total según tipo de factura"""
     subtotal = sum(item['cantidad'] * item['precioUnitario'] for item in items)
     
     if tipo == 'A':
         # Factura A: discrimina IVA
-        iva = subtotal * 0.21
+        iva = subtotal * importe_iva
         total = subtotal + iva
         return {
             'subtotal': round(subtotal, 2),
@@ -39,14 +42,16 @@ def calcular_totales(items, tipo):
         }
     else:
         # Factura B: IVA incluido
-        total = subtotal
-        subtotal_neto = total / 1.21
+        total = subtotal + (subtotal * importe_iva)
+        subtotal_neto = total   
         iva = total - subtotal_neto
+       
         return {
             'subtotal': round(subtotal_neto, 2),
             'iva': round(iva, 2),
-            'total': round(total, 2)
+            'total': round(total, 2) 
         }
+
 
 @app.route('/api/facturas', methods=['POST'])
 def crear_factura():
@@ -199,4 +204,4 @@ if __name__ == '__main__':
     print('   GET    /api/puntos-venta')
     print('   GET    /api/verificar-cae/:cae')
     print('   GET    /api/estadisticas')
-    app.run(debug=True, port=5000)
+    app.run(host="0.0.0.0", debug=True, port=5000)
